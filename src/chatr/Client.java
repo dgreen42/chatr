@@ -7,8 +7,9 @@ import java.util.*;
 
 
 public class Client {
-	private static final String SERVER_ADDRESS = "localhost";
-	private static final int SERVER_PORT = 8010;
+	private static final String SERVER_ADDRESS = "192.168.0.101";
+	private static final int SERVER_PORT = 4010;
+	private static String userName;
 
 	public static void main(String[] args) {
 		try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
@@ -21,10 +22,20 @@ public class Client {
 			System.out.println("Type message. Type 'exit' to quit");
 			
 			new Thread(() -> {
+				try {
+					System.out.println("Enter user name");
+					userName = consoleInput.readLine();
+					out.println("setUserNameVariable:" + userName);
+				} catch (IOException e) {
+					System.out.println(e.getMessage());
+				}
+			}).start();
+			
+			new Thread(() -> {
 				String serverMessage;
 				try {
 					while((serverMessage = in.readLine()) != null) {
-						System.out.println("user : " + serverMessage);
+						System.out.println(serverMessage);
 					}
 				} catch (IOException e) {
 					System.out.println("Disconnected form server");
@@ -43,6 +54,6 @@ public class Client {
 			e.printStackTrace();
 		}
 		
-		System.out.println("Client killed");
+		System.out.println("Client Shutdown");
 	}
 }

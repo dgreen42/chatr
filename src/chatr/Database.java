@@ -2,20 +2,74 @@ package chatr;
 
 import java.sql.*;
 import java.util.*;
+import java.net.InetAddress;
 import java.nio.file.*;
 
 public class Database {
-	String conPath;
-	String driveConPath;
+	private String conPath;
+	private String driveConPath;
 
 	Database(String con) {
 		this.conPath = con;
 		this.driveConPath = "jdbc:sqlite:" + conPath;
 	}
 	
+	public String getConPath() {
+		return conPath;
+	}
+	
+	public String getDriveConPath() {
+		return driveConPath;
+	}
+	
 	public void checkUserStatus(String ip) {
-		//TODO check if the user exists, retrieve the username and check if they are banned. Need to make a seperate table to set
-		// permission status and things like that
+		//TODO check if the user exists, retrieve the username and check if they are banned. 
+	}
+	
+	public int checkTables(String con) {
+		int check = 0;
+		try (Connection dbCon = DriverManager.getConnection(con)) {
+			Statement userCheck = dbCon.createStatement();
+			userCheck.executeUpdate("SELECT * FROM Users");
+			dbCon.close();
+		} catch (SQLException e) {
+			System.out.println("User Table not found");
+			check++;
+			createUserTable(con);
+		}
+
+		try (Connection dbCon = DriverManager.getConnection(con)) {
+			Statement statusCheck = dbCon.createStatement();
+			statusCheck.executeUpdate("SELECT * FROM Status");
+			dbCon.close();
+		} catch (SQLException e) {
+			System.out.println("Status Table not found");
+			check++;
+			createStatusTable(con);
+		}
+		return check;
+	}
+	
+	public static void createUserTable(String con) {
+		try (Connection dbCon = DriverManager.getConnection(con)) {
+			Statement stmt = dbCon.createStatement();
+			stmt.executeUpdate("CREATE TABLE Users (id VARCHAR(225), username VARCHAR(225), ip VARCHAR(225))");
+			System.out.println("User table created");
+			dbCon.close();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public static void createStatusTable(String con) {
+		try (Connection dbCon = DriverManager.getConnection(con)) {
+			Statement stmt = dbCon.createStatement();
+			stmt.executeUpdate("CREATE TABLE Status (id VARCHAR(225), auth INT, banned INT)");
+			System.out.println("Status table created");
+			dbCon.close();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	private UUID generateUUID() {
@@ -52,7 +106,7 @@ public class Database {
 		}
 	}
 		
-	public void setUserName(String username, String ip) {
+	public void createUser(String username, InetAddress address) {
 		UUID uid = generateUUID();
 
 		int dbCheck = dbExists(this.conPath);
@@ -65,7 +119,7 @@ public class Database {
 			if (dbCon != null) {
 				System.out.println("Connected to: " + conPath.toString());
 				try (Statement unQuery = dbCon.createStatement()) {
-					unQuery.executeUpdate("INSERT INTO Users (id, username) VALUES ('%s', '%s', '%s')".formatted(uid, username, ip));
+					unQuery.executeUpdate("INSERT INTO Users (id, username, ip) VALUES ('%s', '%s', '%s')".formatted(uid, username, address.toString()));
 				} catch (SQLException e) {
 					System.out.println(e.getMessage());
 				}
