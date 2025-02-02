@@ -7,7 +7,7 @@ public class Config {
 	private String configFile;
 	private String database;
 	private String ip;
-	private int port;
+	private String port;
 	
 	public Config(String file) {
 		this.configFile = file;
@@ -21,7 +21,7 @@ public class Config {
 		return ip;
 	}
 	
-	public int getPort() {
+	public String getPort() {
 		return port;
 	}
 	
@@ -38,7 +38,7 @@ public class Config {
 					ip = lineSplit[1];
 					System.out.println("IP set");
 				} else if (lineSplit[0].equals("port")) {
-					port = Integer.parseInt(lineSplit[1].toString());
+					port = lineSplit[1];
 					System.out.println("Port set");
 				} else {
 					System.out.println("Invalid config parameter " + line);

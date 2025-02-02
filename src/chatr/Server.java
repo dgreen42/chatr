@@ -11,37 +11,10 @@ public class Server {
 
 	public static void main(String[] args) {
 		
-		String dbPath;
-		String ip;
-		int port;
-		Config config = new Config(CONFIG_FILE);
-		
-		System.out.println("Server started...");
-		config.readConfig();
-
-		dbPath = config.getDatabase();
-		port = config.getPort();
-		ip = config.getIp();
-
-		String driveConPath = db.getDriveConPath();
-		db = new Database(dbPath);
-		int dbCheck = db.dbExists(dbPath);
-		if (dbCheck == 1) {
-			System.out.println("Database DNE. Creating Database at" + dbPath);
-			Database.createUserTable(driveConPath);
-			Database.createStatusTable(driveConPath);
-		} else if (dbCheck == 0) {
-			System.out.println("Database found");
-		}
-		System.out.println("Checking tables...");
-		int tableCheck = db.checkTables(driveConPath);
-		if (tableCheck == 0) {
-			System.out.println("Tables found");
-		} else if (tableCheck == 2) {
-			System.out.println("All tables created");
-		} else {
-			System.out.println("Necessary tables created");
-		}
+		ServerInfo serverInfo = new ServerInfo();
+		Vector<String> info = serverInfo.serverWarmup();
+		String ip = info.get(0);
+		int port = Integer.parseInt(info.get(1));
 
 		try (ServerSocket serverSocket = new ServerSocket()) {
 			InetAddress ipAddress = InetAddress.getByName(ip);
@@ -57,8 +30,54 @@ public class Server {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
+	}	
 	
+	static class ServerInfo {
+	
+		String ip;
+		String port;
+	
+		public Vector<String> serverWarmup() {
+
+			String dbPath;
+			String ip;
+			String port;
+			Config config = new Config(CONFIG_FILE);
+
+			System.out.println("Server started...");
+			config.readConfig();
+
+			port = config.getPort();
+			ip = config.getIp();
+
+			dbPath = config.getDatabase();
+			db = new Database(dbPath);
+			String driveConPath = db.getDriveConPath();
+			int dbCheck = db.dbExists(dbPath);
+			if (dbCheck == 1) {
+				System.out.println("Database DNE. Creating Database at" + dbPath);
+				Database.createUserTable(driveConPath);
+				Database.createStatusTable(driveConPath);
+			} else if (dbCheck == 0) {
+				System.out.println("Database found");
+			}
+			System.out.println("Checking tables...");
+			int tableCheck = db.checkTables(driveConPath);
+			if (tableCheck == 0) {
+				System.out.println("Tables found");
+			} else if (tableCheck == 2) {
+				System.out.println("All tables created");
+			} else {
+				System.out.println("Necessary tables created");
+			}
+
+			Vector<String> serverInfo = new Vector<String>();
+			serverInfo.add(ip);
+			serverInfo.add(port);
+
+			return serverInfo;
+		}
+	}
 	
 	static void broadcast(String message, ClientHandler sender) {
 		synchronized (clientHandlers) {
