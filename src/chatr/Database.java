@@ -2,6 +2,9 @@ package chatr;
 
 import java.sql.*;
 import java.util.*;
+
+import org.sqlite.core.DB;
+
 import java.net.InetAddress;
 import java.nio.file.*;
 
@@ -105,29 +108,39 @@ public class Database {
 			return 1;
 		}
 	}
+	
+	public String getUserNames(InetAddress address) {
+		String userNames = "rUN";
+		try (Connection dbCon = DriverManager.getConnection(driveConPath)) {
+			try(Statement userQuery = dbCon.createStatement()) {
+				ResultSet userResult = userQuery.executeQuery("SELECT * FROM Users WHERE ip == '%s'".formatted(address));
+				while(userResult.next() == true) {
+					userNames = userNames + ":" + userResult.getString("username");
+				}
+			} catch (SQLException e) {
+				System.out.println(e.getMessage());
+			}
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+		return userNames;
+	}
 		
-	public void createUser(String username, InetAddress address) {
-		UUID uid = generateUUID();
-
-		int dbCheck = dbExists(this.conPath);
-		if (dbCheck == 1) {
-			System.out.println("Database path DNE");
-			return;
-		} 
+	public UUID createUser(String username, InetAddress address) {
+		UUID uuid = generateUUID();
 
 		try (Connection dbCon = DriverManager.getConnection(driveConPath)) {
 			if (dbCon != null) {
-				System.out.println("Connected to: " + conPath.toString());
 				try (Statement unQuery = dbCon.createStatement()) {
-					unQuery.executeUpdate("INSERT INTO Users (id, username, ip) VALUES ('%s', '%s', '%s')".formatted(uid, username, address.toString()));
+					unQuery.executeUpdate("INSERT INTO Users (id, username, ip) VALUES ('%s', '%s', '%s')".formatted(uuid, username, address.toString()));
 				} catch (SQLException e) {
 					System.out.println(e.getMessage());
 				}
 				dbCon.close();
 			}
 		} catch (SQLException e) {
-			System.out.println(e.getStackTrace());
+			System.out.println(e.getMessage());
 		}
-
+		return uuid;
 	}
 }

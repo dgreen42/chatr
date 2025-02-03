@@ -1,6 +1,7 @@
 package chatr;
 
 import java.net.*;
+import java.sql.ResultSet;
 import java.io.*;
 import java.util.*;
 
@@ -24,24 +25,23 @@ public class Server {
 				Socket clientSocket = serverSocket.accept();
 				System.out.println("New client connected: " + clientSocket);
 				ClientHandler handler = new ClientHandler(clientSocket);
+				//this condition is here because these nulls get put in the user table and I really don't know why
 				clientHandlers.add(handler);
 				new Thread(handler).start();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}	
+	}		
 	
 	static class ServerInfo {
 	
 		String ip;
 		String port;
+		String dbPath;
 	
 		public Vector<String> serverWarmup() {
 
-			String dbPath;
-			String ip;
-			String port;
 			Config config = new Config(CONFIG_FILE);
 
 			System.out.println("Server started...");
@@ -99,44 +99,58 @@ public class Server {
 		 private String userName;
 		 private PrintWriter out;
 		 private BufferedReader in;
-		 
+
 		 public ClientHandler(Socket socket) {
 			 this.socket = socket;
 			 this.address = socket.getInetAddress();
 			 this.port = socket.getPort();
 		 }
+		 
+		 public String getUserName() {
+			 return userName;
+		 }
+		 
+		 public InetAddress getAddress() {
+			 return address;
+		 }
+		 
+		 public int getPort() {
+			 return port;
+		 }
 
-		@Override
-		public void run() {
-			try {
-				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-				out = new PrintWriter(socket.getOutputStream(), true);
-				String message;
-				while ((message = in.readLine()) != null) {
-					if (message.split(":")[0].equals("setUserNameVariable")) {
-						userName = message.split(":")[1];
-						System.out.println(address+ ":" + port + "; User name set to: " + userName);
-						Server.broadcast(userName + " has connected", this);
-						db.createUser(userName, address);
-					} else {
-						System.out.println("Recieved from: " + userName + ": " + message);
-						Server.broadcast(userName + ": " + message, this);
-					}
-				}
-			} catch (IOException e) {
-				System.out.println("Client disconnected: " + socket);
-			} finally {
-				try {
-					socket.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				Server.removeClient(this);
-			}
-		}
-		
-		void sendMessage(String message) {
-			out.println(message);
-		}
+		 @Override
+		 public void run() {
+			 try {
+				 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				 out = new PrintWriter(socket.getOutputStream(), true);
+				 String message;
+				 String userNames = db.getUserNames(address);
+				 out.println(userNames);
+				 while ((message = in.readLine()) != null) {
+					 if (message.split(":")[0].equals("setUserNameVariable")) {
+						 userName = message.split(":")[1];
+						 System.out.println(address+ ":" + port + "; User name set to: " + userName);
+						 Server.broadcast(userName + " has connected", this);
+						 db.createUser(userName, address);
+					 } else {
+						 System.out.println("Recieved from: " + userName + ": " + message);
+						 Server.broadcast(userName + ": " + message, this);
+					 }
+				 }
+			 } catch (IOException e) {
+				 System.out.println("Client disconnected: " + socket);
+			 } finally {
+				 try {
+					 socket.close();
+				 } catch (IOException e) {
+					 e.printStackTrace();
+				 }
+				 Server.removeClient(this);
+			 }
+		 }
+
+		 void sendMessage(String message) {
+			 out.println(message);
+		 }
 	 }
 }
